@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CS Dashboard">
+<meta name="theme-color" content="#ffffff">
+<title>Christopher Sudol — Daily Dashboard</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f4;
+    --bg3: #eeece9;
+    --text: #1a1a1a;
+    --text2: #6b6b6b;
+    --text3: #9a9a9a;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --info-bg: #e6f1fb;
+    --info-text: #0c447c;
+    --warn-bg: #faeeda;
+    --warn-text: #633806;
+    --success-bg: #eaf3de;
+    --success-text: #27500a;
+    --danger-bg: #faece7;
+    --danger-text: #712b13;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --bg2: #2c2c2e;
+      --bg3: #3a3a3c;
+      --text: #f2f2f7;
+      --text2: #aeaeb2;
+      --text3: #636366;
+      --border: rgba(255,255,255,0.12);
+      --border2: rgba(255,255,255,0.22);
+      --info-bg: #0c2d4a;
+      --info-text: #85b7eb;
+      --warn-bg: #3a2a10;
+      --warn-text: #fac775;
+      --success-bg: #1a2e0a;
+      --success-text: #97c459;
+      --danger-bg: #3a1a10;
+      --danger-text: #f0997b;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+  .app { max-width: 680px; margin: 0 auto; background: var(--bg); min-height: 100vh; }
+
+  /* Header */
+  .header { padding: 20px 18px 14px; border-bottom: 0.5px solid var(--border); background: var(--bg); }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .greeting { font-size: 20px; font-weight: 600; color: var(--text); }
+  .dateline { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .quote-text { font-size: 12px; color: var(--text2); font-style: italic; line-height: 1.5; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--info-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--info-text); flex-shrink: 0; }
+
+  /* Nav */
+  .nav { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-bottom: 0.5px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; transition: color 0.15s; }
+  .nav-btn.active { color: var(--text); border-bottom-color: var(--text); }
+
+  /* Pages */
+  .page { display: none; padding: 16px 18px 40px; }
+  .page.active { display: block; }
+
+  /* Section labels */
+  .lbl { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin: 20px 0 10px; }
+  .lbl:first-child { margin-top: 0; }
+
+  /* Cards */
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 10px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .card-sub { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+  /* Stat grid */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+  .stat-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1.1; }
+  .stat-unit { font-size: 12px; color: var(--text3); font-weight: 400; }
+
+  /* Progress bar */
+  .prog-wrap { margin-bottom: 16px; }
+  .prog-header { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+  .prog-pct { font-weight: 600; color: var(--text); }
+  .prog-bg { background: var(--bg2); border-radius: 20px; height: 6px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 20px; background: var(--text); transition: width 0.4s ease; }
+
+  /* Rows */
+  .row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: start; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .row:last-child { border-bottom: none; }
+  .row-time { font-size: 12px; color: var(--text2); font-weight: 500; padding-top: 2px; }
+  .row-content { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .row-note { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Banners */
+  .banner { border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; }
+  .banner-info { background: var(--info-bg); }
+  .banner-warn { background: var(--warn-bg); }
+  .banner-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .banner-info .banner-title { color: var(--info-text); }
+  .banner-warn .banner-title { color: var(--warn-text); }
+  .banner-sub { font-size: 12px; line-height: 1.5; }
+  .banner-info .banner-sub { color: var(--info-text); opacity: 0.85; }
+  .banner-warn .banner-sub { color: var(--warn-text); opacity: 0.85; }
+
+  /* Todo */
+  .todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .todo-item:last-child { border-bottom: none; }
+  .chk { width: 18px; height: 18px; border: 1.5px solid var(--border2); border-radius: 4px; flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .chk.done { background: var(--success-bg); border-color: var(--success-text); }
+  .chk.done::after { content: ''; display: block; width: 5px; height: 9px; border: 1.5px solid var(--success-text); border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); }
+  .todo-label { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .todo-label.done { text-decoration: line-through; color: var(--text3); }
+
+  /* Badges */
+  .badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-left: 5px; vertical-align: middle; }
+  .b-red { background: var(--danger-bg); color: var(--danger-text); }
+  .b-amber { background: var(--warn-bg); color: var(--warn-text); }
+  .b-blue { background: var(--info-bg); color: var(--info-text); }
+  .b-purple { background: #eeedfe; color: #3c3489; }
+  .b-green { background: var(--success-bg); color: var(--success-text); }
+
+  /* Pills */
+  .pills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+  .pill { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+  .p-teal { background: #e1f5ee; color: #085041; }
+  .p-blue { background: #e6f1fb; color: #0c447c; }
+  .p-purple { background: #eeedfe; color: #3c3489; }
+  .p-amber { background: #faeeda; color: #633806; }
+  .p-coral { background: #faece7; color: #712b13; }
+  .p-green { background: #eaf3de; color: #27500a; }
+  @media (prefers-color-scheme: dark) {
+    .p-teal { background: #04342c; color: #9fe1cb; }
+    .p-blue { background: #042c53; color: #85b7eb; }
+    .p-purple { background: #26215c; color: #afa9ec; }
+    .p-amber { background: #412402; color: #fac775; }
+    .p-coral { background: #4a1b0c; color: #f0997b; }
+    .p-green { background: #173404; color: #97c459; }
+    .b-purple { background: #26215c; color: #afa9ec; }
+  }
+
+  /* Exercise rows */
+  .ex-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 0.5px solid var(--border); }
+  .ex-row:last-child { border-bottom: none; }
+  .ex-name { font-size: 13px; color: var(--text); }
+  .ex-sets { font-size: 12px; color: var(--text2); }
+
+  /* Day tabs */
+  .day-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+  .day-tab { padding: 6px 13px; border-radius: 20px; border: 0.5px solid var(--border2); background: transparent; font-size: 12px; cursor: pointer; color: var(--text2); }
+  .day-tab.active { background: var(--bg2); color: var(--text); font-weight: 600; }
+
+  /* Meal cards */
+  .meal-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 8px; }
+  .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .meal-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .meal-cal { font-size: 11px; color: var(--text3); }
+  .meal-food { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 6px; }
+  .meal-macros { display: flex; gap: 5px; }
+  .mac { font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+  .mac-p { background: #e1f5ee; color: #085041; }
+  .mac-c { background: #e6f1fb; color: #0c447c; }
+  .mac-f { background: #faeeda; color: #633806; }
+  @media (prefers-color-scheme: dark) {
+    .mac-p { background: #04342c; color: #9fe1cb; }
+    .mac-c { background: #042c53; color: #85b7eb; }
+    .mac-f { background: #412402; color: #fac775; }
+  }
+
+  /* Cook steps */
+  .cook-step { display: flex; gap: 10px; padding: 9px 0; border-bottom: 0.5px solid var(--border); align-items: flex-start; }
+  .cook-step:last-child { border-bottom: none; }
+  .cook-num { width: 22px; height: 22px; border-radius: 50%; background: var(--bg2); border: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--text2); flex-shrink: 0; margin-top: 1px; }
+  .cook-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .cook-time { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Gear rows */
+  .gear-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 11px 0; border-bottom: 0.5px solid var(--border); gap: 12px; }
+  .gear-row:last-child { border-bottom: none; }
+  .gear-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .gear-why { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .gear-price { font-size: 12px; color: var(--text2); white-space: nowrap; flex-shrink: 0; }
+
+  /* Week cards */
+  .week-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 8px; }
+  .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .week-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .week-items { font-size: 12px; color: var(--text2); line-height: 1.7; }
+
+  /* Macro slider */
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .slider-label { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--text); }
+  .slider-val { font-size: 13px; font-weight: 600; color: var(--text); min-width: 55px; }
+  .macro-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+
+  /* Grid */
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+
+  /* Action buttons */
+  .action-btn { display: block; width: 100%; padding: 11px 14px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; font-size: 13px; color: var(--text); cursor: pointer; text-align: left; margin-top: 10px; }
+  .action-btn:active { background: var(--bg2); }
+
+  /* Setup steps */
+  .setup-step { display: flex; gap: 14px; padding: 12px 0; border-bottom: 0.5px solid var(--border); align-items: flex-start; }
+  .setup-step:last-child { border-bottom: none; }
+  .step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--text); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .step-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .step-note { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .row { grid-template-columns: 85px 1fr; }
+    .greeting { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="greeting" id="greeting">Good morning, Christopher</div>
+        <div class="dateline" id="dateline"></div>
+      </div>
+      <div class="avatar">CS</div>
+    </div>
+    <div class="quote-text" id="quote"></div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="show('today')">Today</button>
+    <button class="nav-btn" onclick="show('school')">School</button>
+    <button class="nav-btn" onclick="show('schedule')">Schedule</button>
+    <button class="nav-btn" onclick="show('fitness')">Fitness</button>
+    <button class="nav-btn" onclick="show('diet')">Diet + Meals</button>
+    <button class="nav-btn" onclick="show('phone')">Phone</button>
+    <button class="nav-btn" onclick="show('certs')">CAD + Certs</button>
+    <button class="nav-btn" onclick="show('summer')">Summer Plan</button>
+    <button class="nav-btn" onclick="show('gear')">Gear</button>
+  </div>
+
+  <!-- TODAY -->
+  <div class="page active" id="today">
+    <div class="banner banner-info" id="today-banner">
+      <div class="banner-title" id="today-focus">Loading...</div>
+      <div class="banner-sub" id="today-sub"></div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">School tasks done</div><div class="stat-val" id="s-done">—</div></div>
+      <div class="stat"><div class="stat-label">Days to Aug 19</div><div class="stat-val" id="s-days">—</div></div>
+      <div class="stat"><div class="stat-label">Today's workout</div><div class="stat-val" style="font-size:15px" id="s-workout">—</div></div>
+      <div class="stat"><div class="stat-label">Top priority</div><div class="stat-val" style="font-size:15px">History</div></div>
+    </div>
+    <div class="lbl">School completion</div>
+    <div class="prog-wrap">
+      <div class="prog-header"><span>Overall progress</span><span class="prog-pct" id="s-pct">0%</span></div>
+      <div class="prog-bg"><div class="prog-fill" id="s-bar" style="width:0%"></div></div>
+    </div>
+    <div class="lbl">Today at a glance</div>
+    <div class="card">
+      <div class="row"><div class="row-time">5:45 AM</div><div class="row-content">Wake + Lauds on Hallow<div class="row-note">Every day — no exceptions</div></div></div>
+      <div class="row"><div class="row-time">6:10</div><div class="row-content">Mobility 10 min + 16 oz water + sunlight</div></div>
+      <div class="row"><div class="row-time">6:25</div><div class="row-content">High-protein breakfast</div></div>
+      <div class="row"><div class="row-time">School</div><div class="row-content">Every free period = missing work. History first.<div class="row-note">Don't mix classes</div></div></div>
+      <div class="row"><div class="row-time">3:30 PM</div><div class="row-content" id="today-wk-row">Bodyweight workout<div class="row-note">See Fitness tab</div></div></div>
+      <div class="row"><div class="row-time">5:30</div><div class="row-content">Missing work block — 2.5 hrs Pomodoro 50/10<div class="row-note">Phone in another room. History first, always.</div></div></div>
+      <div class="row"><div class="row-time">9:00</div><div class="row-content">Vespers + journal on Hallow</div></div>
+      <div class="row"><div class="row-time">10:00 PM</div><div class="row-content">Lights out — 7.5–8 hrs sleep</div></div>
+    </div>
+  </div>
+
+  <!-- SCHOOL -->
+  <div class="page" id="school">
+    <div class="banner banner-info">
+      <div class="banner-title">Senior crunch — work in this exact order</div>
+      <div class="banner-sub">Finish every item in one class before moving to the next. Momentum matters more than multitasking.</div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-header"><span>Overall completion</span><span class="prog-pct" id="sch-pct">0%</span></div>
+      <div class="prog-bg"><div class="prog-fill" id="sch-bar" style="width:0%"></div></div>
+    </div>
+    <div class="lbl">1st — History <span class="badge b-red">Most urgent</span></div>
+    <div class="card" id="hist-list"></div>
+    <div class="lbl">2nd — AP Calc AB <span class="badge b-amber">Urgent</span></div>
+    <div class="card" id="calc-list"></div>
+    <div class="lbl">3rd — Physics C Mechanics <span class="badge b-blue">Important</span></div>
+    <div class="card" id="phys-list"></div>
+    <div class="lbl">4th — Physics C E&amp;M <span class="badge b-purple">Important</span></div>
+    <div class="card" id="em-list"></div>
+    <div class="lbl">5th — Religion <span class="badge b-green">Do last</span></div>
+    <div class="card" id="rel-list"></div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="page" id="schedule">
+    <div class="lbl">Weekday schedule</div>
+    <div class="card">
+      <div class="row"><div class="row-time">5:45 AM</div><div class="row-content">Wake — fixed every day<div class="row-note">Circadian rhythm is not flexible</div></div></div>
+      <div class="row"><div class="row-time">5:50</div><div class="row-content">Morning prayer — Lauds on Hallow (15 min)<div class="row-note">Before your phone does anything else</div></div></div>
+      <div class="row"><div class="row-time">6:10</div><div class="row-content">Mobility circuit 10 min + 16 oz water outside<div class="row-note">Sunlight + movement = natural cortisol</div></div></div>
+      <div class="row"><div class="row-time">6:25</div><div class="row-content">High-protein breakfast<div class="row-note">Overnight oats, eggs, or shake. Never skip.</div></div></div>
+      <div class="row"><div class="row-time">6:45</div><div class="row-content">Review 3 daily priorities (2 min)<div class="row-note">History → Calc → Physics CM → EM → Religion</div></div></div>
+      <div class="row"><div class="row-time">School</div><div class="row-content">Every free period for missing work<div class="row-note">Teachers hint at what matters. Pay attention.</div></div></div>
+      <div class="row"><div class="row-time">Lunch</div><div class="row-content">Meal-prepped food + 10 min walk outside</div></div>
+      <div class="row"><div class="row-time">3:30 PM</div><div class="row-content">Bodyweight workout — 60 min<div class="row-note">Physical effort before study = sharper focus</div></div></div>
+      <div class="row"><div class="row-time">5:00</div><div class="row-content">Shower + meal-prep dinner<div class="row-note">Body to mind transition ritual</div></div></div>
+      <div class="row"><div class="row-time">5:30</div><div class="row-content">Missing work block — 2.5 hrs Pomodoro 50/10<div class="row-note">Phone in another room. History first.</div></div></div>
+      <div class="row"><div class="row-time">8:00 PM</div><div class="row-content">Dinner + real downtime<div class="row-note">Family, outside, read — not scrolling</div></div></div>
+      <div class="row"><div class="row-time">9:00</div><div class="row-content">Vespers + journal on Hallow (10 min)</div></div>
+      <div class="row"><div class="row-time">9:15</div><div class="row-content">Wind down — blue light glasses on, no social media</div></div>
+      <div class="row"><div class="row-time">10:00 PM</div><div class="row-content">Lights out<div class="row-note">7.5–8 hrs sleep. Builds muscle. Locks in learning.</div></div></div>
+    </div>
+    <div class="lbl">Sunday schedule</div>
+    <div class="banner banner-warn">
+      <div class="banner-title">Sunday is not a grind day</div>
+      <div class="banner-sub">Mass + meal prep + rest. No CAD. No school work. This day recharges everything else.</div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="row-time">7:30 AM</div><div class="row-content">Wake + light breakfast before Mass</div></div>
+      <div class="row"><div class="row-time">8:30</div><div class="row-content">Leave for Mass — arrive 5–10 min early<div class="row-note">Sit, settle, prepare your heart</div></div></div>
+      <div class="row"><div class="row-time">9:00</div><div class="row-content" style="color:var(--info-text);font-weight:600">Holy Mass<div class="row-note" style="color:var(--info-text)">The anchor of the whole week. Stay for the full hour.</div></div></div>
+      <div class="row"><div class="row-time">10:15</div><div class="row-content">Post-Mass thanksgiving prayer (5 min)<div class="row-note">A habit the saints kept. Don't rush out.</div></div></div>
+      <div class="row"><div class="row-time">10:30</div><div class="row-content">Full post-Mass brunch — eggs, bacon, toast, fruit<div class="row-note">Sit down and enjoy it. You earned the morning.</div></div></div>
+      <div class="row"><div class="row-time">11:15</div><div class="row-content">Grocery run if needed (30–45 min)</div></div>
+      <div class="row"><div class="row-time">12:00 PM</div><div class="row-content">Meal prep block — 2 hrs<div class="row-note">Podcast or Hallow meditation while cooking</div></div></div>
+      <div class="row"><div class="row-time">2:30</div><div class="row-content">Weekly review — 20 min<div class="row-note">Map the week, set 3 goals, assign gym days</div></div></div>
+      <div class="row"><div class="row-time">3:00</div><div class="row-content">Free time — family, friends, walk, rest<div class="row-note">God rested on the seventh day.</div></div></div>
+      <div class="row"><div class="row-time">6:00</div><div class="row-content">Sunday dinner — a real cooked meal, not a container<div class="row-note">Steak, pasta, roast chicken. The week's reward.</div></div></div>
+      <div class="row"><div class="row-time">8:00</div><div class="row-content">Vespers + weekly reflection (15 min)</div></div>
+      <div class="row"><div class="row-time">10:00 PM</div><div class="row-content">Lights out — big week starts tomorrow</div></div>
+    </div>
+  </div>
+
+  <!-- FITNESS -->
+  <div class="page" id="fitness">
+    <div class="lbl">Your postural corrections — every session</div>
+    <div class="grid2">
+      <div class="card"><div class="card-title">Forward lean fix</div><div class="card-sub">Glute bridges, Nordic curls, dead bugs every session. Couch stretch 90s/side daily.</div></div>
+      <div class="card"><div class="card-title">Feet turned out fix</div><div class="card-sub">Band clamshells, internal hip rotation stretches, pigeon pose every leg day.</div></div>
+      <div class="card"><div class="card-title">Posture reset</div><div class="card-sub">Band face pulls every push day. Chin tucks + wall angels in daily mobility. Non-negotiable.</div></div>
+      <div class="card"><div class="card-title">Ankle mobility</div><div class="card-sub">Wall ankle stretch before every leg session. Helps foot tracking and squat depth.</div></div>
+    </div>
+    <div class="lbl">4-day split — tap to view</div>
+    <div class="day-tabs" id="wk-tabs">
+      <button class="day-tab active" onclick="showWk(0,this)">Day 1 — Push</button>
+      <button class="day-tab" onclick="showWk(1,this)">Day 2 — Pull</button>
+      <button class="day-tab" onclick="showWk(2,this)">Day 3 — Legs</button>
+      <button class="day-tab" onclick="showWk(3,this)">Day 4 — Core</button>
+    </div>
+    <div class="card" id="wk-display"></div>
+    <div class="lbl">Daily mobility — 10 min every morning</div>
+    <div class="card">
+      <div class="ex-row"><span class="ex-name">Couch stretch</span><span class="ex-sets">90s / side</span></div>
+      <div class="ex-row"><span class="ex-name">90/90 hip stretch</span><span class="ex-sets">60s / side</span></div>
+      <div class="ex-row"><span class="ex-name">Pigeon pose</span><span class="ex-sets">60s / side</span></div>
+      <div class="ex-row"><span class="ex-name">Wall angels</span><span class="ex-sets">2 x 10</span></div>
+      <div class="ex-row"><span class="ex-name">Chin tucks</span><span class="ex-sets">3 x 15</span></div>
+      <div class="ex-row"><span class="ex-name">Thoracic rotations</span><span class="ex-sets">2 x 10 / side</span></div>
+      <div class="ex-row"><span class="ex-name">Dead bug</span><span class="ex-sets">2 x 8 / side</span></div>
+      <div class="ex-row"><span class="ex-name">Wall ankle stretch</span><span class="ex-sets">30s / side</span></div>
+    </div>
+    <div class="lbl">Milestones to chase</div>
+    <div class="card">
+      <div class="ex-row"><span class="ex-name">Pull-ups</span><span class="ex-sets">Goal: 3 x 15 clean</span></div>
+      <div class="ex-row"><span class="ex-name">Dips</span><span class="ex-sets">Goal: 3 x 20 + band resistance</span></div>
+      <div class="ex-row"><span class="ex-name">Push-ups</span><span class="ex-sets">Goal: 50 consecutive</span></div>
+      <div class="ex-row"><span class="ex-name">L-sit (parallettes)</span><span class="ex-sets">Goal: full 20 sec</span></div>
+      <div class="ex-row"><span class="ex-name">Nordic curl</span><span class="ex-sets">Goal: 1 full rep</span></div>
+      <div class="ex-row"><span class="ex-name">Bulgarian split squat</span><span class="ex-sets">Goal: add band / weight vest</span></div>
+    </div>
+    <div class="lbl">Equipment</div>
+    <div class="pills">
+      <span class="pill p-teal">Pull-up bar</span>
+      <span class="pill p-teal">Dip bars</span>
+      <span class="pill p-teal">Resistance bands</span>
+      <span class="pill p-amber">Get: parallettes ~$40–60</span>
+      <span class="pill p-blue">Gym (until June)</span>
+    </div>
+  </div>
+
+  <!-- DIET + MEALS -->
+  <div class="page" id="diet">
+    <div class="lbl">Daily nutrition targets</div>
+    <div class="slider-row">
+      <span class="slider-label">Weight (lbs)</span>
+      <input type="range" min="130" max="250" value="175" step="1" id="wt-slider" oninput="calcMacros(this.value)">
+      <span class="slider-val" id="wt-out">175 lbs</span>
+    </div>
+    <div class="macro-grid">
+      <div class="stat"><div class="stat-label">Daily calories</div><div class="stat-val" id="m-cal">2,975</div></div>
+      <div class="stat"><div class="stat-label">Protein</div><div class="stat-val"><span id="m-pro">175</span><span class="stat-unit">g</span></div></div>
+      <div class="stat"><div class="stat-label">Carbs</div><div class="stat-val"><span id="m-carb">350</span><span class="stat-unit">g</span></div></div>
+      <div class="stat"><div class="stat-label">Fats</div><div class="stat-val"><span id="m-fat">80</span><span class="stat-unit">g</span></div></div>
+    </div>
+    <div class="lbl">Core rules</div>
+    <div class="card">
+      <div class="row"><div class="row-time">Protein first</div><div class="row-content">Every meal anchored by protein — chicken, beef, eggs, fish, Greek yogurt, cottage cheese<div class="row-note">1g per lb bodyweight. Non-negotiable.</div></div></div>
+      <div class="row"><div class="row-time">Carb timing</div><div class="row-content">Biggest carbs at breakfast and post-workout. Lighter at dinner.<div class="row-note">Fuel workouts and study sessions when needed most.</div></div></div>
+      <div class="row"><div class="row-time">Fats</div><div class="row-content">Eggs, olive oil, avocado, nuts — essential for testosterone at 18<div class="row-note">Cut refined sugar and ultra-processed food, not fat.</div></div></div>
+      <div class="row"><div class="row-time">Hydration</div><div class="row-content">100+ oz water daily — more on training days<div class="row-note">Dehydration kills focus and strength.</div></div></div>
+      <div class="row"><div class="row-time">Friday fast</div><div class="row-content">Catholic abstinence — fish or plant-based only<div class="row-note">Shrimp or salmon prepped Sunday. Friday = reheat and eat.</div></div></div>
+    </div>
+    <div class="lbl">Supplements</div>
+    <div class="grid2">
+      <div class="card"><div class="card-title">Creatine monohydrate</div><div class="card-sub">5g daily. Most researched supplement. Strength + cognitive boost. Take indefinitely.</div></div>
+      <div class="card"><div class="card-title">Whey protein</div><div class="card-sub">1–2 scoops/day. Post-workout or morning. ~25g protein per scoop.</div></div>
+      <div class="card"><div class="card-title">Vitamin D3 + K2</div><div class="card-sub">2,000–5,000 IU D3 daily. Most people are deficient. K2 improves absorption.</div></div>
+      <div class="card"><div class="card-title">Magnesium glycinate</div><div class="card-sub">300–400mg before bed. Dramatically improves sleep and recovery.</div></div>
+    </div>
+    <div class="lbl">Weekly meal plan</div>
+    <div class="day-tabs" id="meal-tabs">
+      <button class="day-tab active" onclick="showMeals(0,this)">Mon</button>
+      <button class="day-tab" onclick="showMeals(1,this)">Tue</button>
+      <button class="day-tab" onclick="showMeals(2,this)">Wed</button>
+      <button class="day-tab" onclick="showMeals(3,this)">Thu</button>
+      <button class="day-tab" onclick="showMeals(4,this)">Fri</button>
+      <button class="day-tab" onclick="showMeals(5,this)">Sat</button>
+      <button class="day-tab" onclick="showMeals(6,this)">Sun</button>
+    </div>
+    <div id="meal-display"></div>
+    <div class="lbl">Sunday meal prep</div>
+    <div class="banner banner-warn">
+      <div class="banner-title">Mass at 9 AM — always first</div>
+      <div class="banner-sub">Meal prep starts at noon after Mass + brunch. Sunday dinner is a real sit-down meal, not a container.</div>
+    </div>
+    <div class="card">
+      <div class="cook-step"><div class="cook-num">1</div><div><div class="cook-text">Preheat oven 400°F — season and put sweet potatoes in.</div><div class="cook-time">0:00 — 45 min hands-free</div></div></div>
+      <div class="cook-step"><div class="cook-num">2</div><div><div class="cook-text">Start rice (4 cups rice, 8 cups water).</div><div class="cook-time">0:05 — 30 min hands-free</div></div></div>
+      <div class="cook-step"><div class="cook-num">3</div><div><div class="cook-text">Boil 12 eggs — 10 min, then ice bath. Peel when cool.</div><div class="cook-time">0:10 — 25 min total</div></div></div>
+      <div class="cook-step"><div class="cook-num">4</div><div><div class="cook-text">Bake chicken breast alongside sweet potatoes at 400°F.</div><div class="cook-time">0:15 — 25–30 min</div></div></div>
+      <div class="cook-step"><div class="cook-num">5</div><div><div class="cook-text">Brown ground beef in skillet — garlic, salt, pepper. Drain and cool.</div><div class="cook-time">0:45 — 15 min active</div></div></div>
+      <div class="cook-step"><div class="cook-num">6</div><div><div class="cook-text">Roast broccoli — olive oil + salt, 20 min at 400°F (same oven).</div><div class="cook-time">0:50 — 20 min hands-free</div></div></div>
+      <div class="cook-step"><div class="cook-num">7</div><div><div class="cook-text">Assemble 5 overnight oats jars: ½ cup oats + ½ cup Greek yogurt + 1 scoop protein + ½ banana + 1 tbsp chia + splash milk.</div><div class="cook-time">1:05 — 15 min</div></div></div>
+      <div class="cook-step"><div class="cook-num">8</div><div><div class="cook-text">Portion into labeled containers: 5 lunches + 5 dinners.</div><div class="cook-time">1:20 — 20 min</div></div></div>
+      <div class="cook-step"><div class="cook-num">9</div><div><div class="cook-text">Marinate Friday fish (shrimp or salmon) — store raw. Cook fresh Friday in 10 min.</div><div class="cook-time">1:40 — 10 min</div></div></div>
+    </div>
+    <div class="lbl">Weekly grocery list</div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Proteins</div>
+      <div class="pills"><span class="pill p-teal">2 lbs chicken breast</span><span class="pill p-teal">1.5 lbs ground beef 90/10</span><span class="pill p-teal">1 lb shrimp or 2 salmon fillets</span><span class="pill p-teal">18-count eggs</span><span class="pill p-teal">32 oz plain Greek yogurt</span><span class="pill p-teal">24 oz cottage cheese</span></div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin:8px 0 6px">Carbs</div>
+      <div class="pills"><span class="pill p-blue">5 lb jasmine rice</span><span class="pill p-blue">4 sweet potatoes</span><span class="pill p-blue">Old-fashioned oats (large)</span><span class="pill p-blue">Bananas (bunch)</span><span class="pill p-blue">Frozen mixed berries</span><span class="pill p-blue">Ezekiel bread</span><span class="pill p-blue">Chia seeds</span></div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin:8px 0 6px">Vegetables + fats</div>
+      <div class="pills"><span class="pill p-green">2 bags broccoli</span><span class="pill p-green">Baby spinach</span><span class="pill p-green">Bell peppers x3</span><span class="pill p-green">Garlic + onion</span><span class="pill p-amber">Olive oil</span><span class="pill p-amber">Mixed nuts</span><span class="pill p-amber">Avocados x3</span><span class="pill p-amber">Natural peanut butter</span></div>
+    </div>
+  </div>
+
+  <!-- PHONE -->
+  <div class="page" id="phone">
+    <div class="lbl">Minimalist Phone — key settings</div>
+    <div class="card">
+      <div class="row"><div class="row-time">Home screen</div><div class="row-content">Text links only — 5–6 apps max<div class="row-note">Phone, Messages, Hallow, Calendar, Maps, Clock</div></div></div>
+      <div class="row"><div class="row-time">App drawer</div><div class="row-content">Everything else in plain text drawer — no icons<div class="row-note">Boring is the point. Out of sight = out of mind.</div></div></div>
+      <div class="row"><div class="row-time">Grayscale</div><div class="row-content">Enable 24/7 or minimum after 8 PM<div class="row-note">Color is dopamine. Gray makes phone a tool, not entertainment.</div></div></div>
+      <div class="row"><div class="row-time">Usage limits</div><div class="row-content">Discord 30 min/day + Snapchat 30 min/day + YouTube 45 min/day via Digital Wellbeing<div class="row-note">They stay — but capped.</div></div></div>
+      <div class="row"><div class="row-time">Notifications</div><div class="row-content">Off for all except: Phone, Messages, Discord DMs only, WhatsApp, Remind, Canvas</div></div>
+      <div class="row"><div class="row-time">Bedtime mode</div><div class="row-content">Samsung Bedtime Mode: 9 PM to 6 AM — grayscale + DND + dim</div></div>
+    </div>
+    <div class="lbl">Home screen — text links only</div>
+    <div class="pills"><span class="pill p-teal">Phone</span><span class="pill p-teal">Messages</span><span class="pill p-teal">Hallow</span><span class="pill p-teal">Calendar</span><span class="pill p-teal">Alarmy</span><span class="pill p-teal">Maps</span></div>
+    <div class="lbl">Keep in drawer — communication</div>
+    <div class="pills"><span class="pill p-blue">Discord</span><span class="pill p-blue">Snapchat</span><span class="pill p-blue">WhatsApp</span><span class="pill p-blue">Signal</span><span class="pill p-blue">Remind</span></div>
+    <div class="lbl">Keep in drawer — school + work</div>
+    <div class="pills"><span class="pill p-purple">Canvas</span><span class="pill p-purple">Gmail</span><span class="pill p-purple">Outlook</span><span class="pill p-purple">Google Drive</span><span class="pill p-purple">Quizlet</span><span class="pill p-purple">Trello</span><span class="pill p-purple">Calculator</span><span class="pill p-purple">Notes</span><span class="pill p-purple">ChatGPT</span></div>
+    <div class="lbl">Delete — all of these go</div>
+    <div class="pills"><span class="pill p-coral">TikTok</span><span class="pill p-coral">Instagram</span><span class="pill p-coral">Facebook</span><span class="pill p-coral">Pinterest</span><span class="pill p-coral">Crunchyroll</span><span class="pill p-coral">Disney+</span><span class="pill p-coral">Tubi</span><span class="pill p-coral">Roblox</span><span class="pill p-coral">Clash of Clans</span><span class="pill p-coral">Clash Royale</span><span class="pill p-coral">BitLife</span><span class="pill p-coral">Bloons TD 6</span><span class="pill p-coral">Balatro</span><span class="pill p-coral">Block Blast</span><span class="pill p-coral">Drive Mad</span><span class="pill p-coral">Idle Drift</span><span class="pill p-coral">State.io</span><span class="pill p-coral">Tower War</span><span class="pill p-coral">Wall Kickers</span><span class="pill p-coral">Roadside Empire</span><span class="pill p-coral">Flow Free</span><span class="pill p-coral">Solitaire (both)</span><span class="pill p-coral">WEBTOON</span><span class="pill p-coral">VSCO</span><span class="pill p-coral">Temu</span><span class="pill p-coral">Etsy</span><span class="pill p-coral">Steam</span><span class="pill p-coral">Medal</span></div>
+  </div>
+
+  <!-- CERTS -->
+  <div class="page" id="certs">
+    <div class="lbl">CAD certification timeline</div>
+    <div class="card">
+      <div class="row"><div class="row-time">Jun wk 1–2</div><div class="row-content">SolidWorks fundamentals — parts, assemblies, drawings<div class="row-note">certifications.solidworks.com — study guides are free</div></div></div>
+      <div class="row"><div class="row-time">Jun wk 3–4</div><div class="row-content">CSWA exam prep + take CSWA ($99 student pricing)<div class="row-note">Foundation for everything else. Take it seriously.</div></div></div>
+      <div class="row"><div class="row-time">Jul wk 1–2</div><div class="row-content">Vacation — light review only, YouTube videos max<div class="row-note">Let it absorb. Don't grind vacation.</div></div></div>
+      <div class="row"><div class="row-time">Jul wk 3–4</div><div class="row-content">CSWP prep — advanced parts, surfacing, sheet metal<div class="row-note">Harder than CSWA. 3–4 weeks of evening study.</div></div></div>
+      <div class="row"><div class="row-time">Aug wk 1</div><div class="row-content">Take CSWP + begin Fusion 360 (free Autodesk student account)<div class="row-note">education.autodesk.com — free with school email</div></div></div>
+      <div class="row"><div class="row-time">Aug wk 2</div><div class="row-content">Fusion 360 cert exam + start KiCad for PCB design<div class="row-note">KiCad is free and open source — industry standard</div></div></div>
+      <div class="row"><div class="row-time">Aug wk 3</div><div class="row-content">Revit basics — free student license via Autodesk</div></div>
+    </div>
+    <div class="lbl">RPI prep — start now</div>
+    <div class="card">
+      <div class="row"><div class="row-time">Physics C</div><div class="row-content">Clear missing work first — this is AP credit toward RPI<div class="row-note">Physics C E&amp;M especially critical for your EE master's path</div></div></div>
+      <div class="row"><div class="row-time">Calc AB</div><div class="row-content">Finish missing work — you need Calc BC + Multivariable at RPI<div class="row-note">Don't arrive rusty. This is your foundation.</div></div></div>
+      <div class="row"><div class="row-time">Self study</div><div class="row-content">MIT OpenCourseWare 18.01 (Calc) + 8.01 (Physics) — free<div class="row-note">Start after school work is cleared. 30 min/evening.</div></div></div>
+    </div>
+  </div>
+
+  <!-- SUMMER -->
+  <div class="page" id="summer">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.7">Apr 22 → Aug 19. Full-time job throughout. 2-week vacation in July. School work cleared first, then CAD certs begin.</p>
+    <div id="summer-container"></div>
+  </div>
+
+  <!-- GEAR -->
+  <div class="page" id="gear">
+    <div class="lbl">Engineering + CAD</div>
+    <div class="card">
+      <div class="gear-row"><div><div class="gear-name">ThinkPad P1 Gen 7</div><div class="gear-why">ISV-certified for SolidWorks + Revit. NVIDIA RTX 2000 Ada. Get 32GB RAM min.</div></div><div class="gear-price">~$1,800–2,400</div></div>
+      <div class="gear-row"><div><div class="gear-name">External monitor (27" 1440p)</div><div class="gear-why">CAD on one screen is painful. Dual monitor is essential.</div></div><div class="gear-price">~$200–350</div></div>
+      <div class="gear-row"><div><div class="gear-name">3DConnexion SpaceMouse Compact</div><div class="gear-why">Industry standard for CAD navigation. Dramatically speeds up SolidWorks.</div></div><div class="gear-price">~$130</div></div>
+    </div>
+    <div class="lbl">Fitness — buy these first</div>
+    <div class="card">
+      <div class="gear-row"><div><div class="gear-name">Parallettes (wood)</div><div class="gear-why">Get before June. Essential for L-sits and deep dip range.</div></div><div class="gear-price">~$40–60</div></div>
+      <div class="gear-row"><div><div class="gear-name">Dip belt</div><div class="gear-why">Add weight once you hit 3x15 pull-ups. Progressive overload without a gym.</div></div><div class="gear-price">~$25–40</div></div>
+      <div class="gear-row"><div><div class="gear-name">Creatine monohydrate</div><div class="gear-why">5g daily. Strength + cognitive boost. Take indefinitely.</div></div><div class="gear-price">~$20–30/mo</div></div>
+      <div class="gear-row"><div><div class="gear-name">Whey protein powder</div><div class="gear-why">Hit 175g+ protein daily without cooking every meal.</div></div><div class="gear-price">~$35–50/mo</div></div>
+      <div class="gear-row"><div><div class="gear-name">Magnesium glycinate</div><div class="gear-why">300–400mg before bed. Sleep and recovery dramatically improved.</div></div><div class="gear-price">~$15/mo</div></div>
+    </div>
+    <div class="lbl">Focus + sleep</div>
+    <div class="card">
+      <div class="gear-row"><div><div class="gear-name">Blue light blocking glasses</div><div class="gear-why">Wear after 8 PM — heavy CAD + study screen time.</div></div><div class="gear-price">~$20–40</div></div>
+      <div class="gear-row"><div><div class="gear-name">Sony WH-1000XM5 headphones</div><div class="gear-why">Deep focus for CAD and cert study sessions.</div></div><div class="gear-price">~$280–350</div></div>
+      <div class="gear-row"><div><div class="gear-name">40 oz insulated water bottle</div><div class="gear-why">Hit 100+ oz water passively on long days.</div></div><div class="gear-price">~$25–45</div></div>
+    </div>
+    <div class="lbl">Faith + reflection</div>
+    <div class="card">
+      <div class="gear-row"><div><div class="gear-name">Hallow premium</div><div class="gear-why">Lauds, Vespers, rosary, Lectio Divina. Built for your prayer rhythm.</div></div><div class="gear-price">~$70/yr</div></div>
+      <div class="gear-row"><div><div class="gear-name">Physical planner / bullet journal</div><div class="gear-why">Engineering mindset + paper planning. Weekly review Sundays.</div></div><div class="gear-price">~$15–30</div></div>
+    </div>
+    <div class="lbl">Grooming</div>
+    <div class="card">
+      <div class="gear-row"><div><div class="gear-name">Monte skincare + sea salt spray</div><div class="gear-why">Your picks — solid calls. Consistent skincare and texture with minimal effort.</div></div><div class="gear-price">~$30–70</div></div>
+      <div class="gear-row"><div><div class="gear-name">CeraVe lip balm</div><div class="gear-why">Overlooked but noticeable. Chapped lips undercut everything else.</div></div><div class="gear-price">~$5–8</div></div>
+      <div class="gear-row"><div><div class="gear-name">Wahl electric trimmer</div><div class="gear-why">Clean lines between cuts. Instantly sharpens your look.</div></div><div class="gear-price">~$30–60</div></div>
+    </div>
+  </div>
+
+</div><!-- end .app -->
+
+<script>
+const QUOTES=[
+  '"Whatever you do, work at it with all your heart." — Col 3:23',
+  '"Pray as though everything depended on God. Work as though everything depended on you." — St. Augustine',
+  '"The price of excellence is discipline."',
+  '"Do not be overcome by evil, but overcome evil with good." — Rom 12:21',
+  '"Small disciplines repeated daily lead to great achievements over time."',
+  '"The secret of getting ahead is getting started." — Mark Twain',
+  '"You have power over your mind, not outside events. Realize this and you will find strength."'
+];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const WK_MAP={0:'Rest — mobility only',1:'Push (Day 1)',2:'Pull (Day 2)',3:'Legs (Day 3)',4:'Core (Day 4)',5:'Push (Day 1)',6:'Pull (Day 2)'};
+
+function initHeader(){
+  const now=new Date(),h=now.getHours(),dow=now.getDay();
+  document.getElementById('greeting').textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Christopher';
+  document.getElementById('dateline').textContent=WDAYS[dow]+', '+MONTHS[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
+  document.getElementById('quote').textContent=QUOTES[dow%QUOTES.length];
+  const wk=WK_MAP[dow];
+  document.getElementById('s-workout').textContent=wk;
+  document.getElementById('today-wk-row').innerHTML=wk+'<div class="row-note">See Fitness tab for full session</div>';
+  const target=new Date('2025-08-19');
+  document.getElementById('s-days').textContent=Math.max(0,Math.ceil((target-now)/86400000));
+  if(dow===0){document.getElementById('today-focus').textContent='Sunday — Mass + rest + prep';document.getElementById('today-sub').textContent='Holy Mass at 9 AM. Meal prep noon–2:30 PM. No school work. You earned the rest.';}
+  else if(dow===5){document.getElementById('today-focus').textContent='Friday — abstinence + crunch';document.getElementById('today-sub').textContent='Fish or plant-based meals only. Hit your History work hard today.';}
+  else{document.getElementById('today-focus').textContent='Senior crunch mode — History first';document.getElementById('today-sub').textContent='Every free period is for missing work. History → Calc → Physics CM → E&M → Religion.';}
+}
+
+const ALL_TODOS=[
+  {id:'hist-list',pfx:'h',items:['5.5 CW','5.5 HW','3.2 CW','3.9 and 3.10 HW','Virtual Day','MLK letter','AP Gov women readings','3.10–3.13 CW','Federalist 10']},
+  {id:'calc-list',pfx:'c',items:['PS 5.1','Virtual Day Work','Reflection','Lab']},
+  {id:'phys-list',pfx:'p',items:['Pre Labs','Progress Check FRQ','Progress Check MCQ','Virtual Day']},
+  {id:'em-list',pfx:'e',items:['CW 13E','VCD 4 FRQs','HW 13F','HW 11I','HW 11G','Virtual Day','HW 12B','HW 12D','HW 12F','HW 13B','HW 13D']},
+  {id:'rel-list',pfx:'r',items:['Assignment 1','Assignment 2','Assignment 3','Assignment 4','Virtual Day']},
+];
+
+function buildTodos(){
+  let total=0,done=0;
+  ALL_TODOS.forEach(list=>{
+    const el=document.getElementById(list.id);
+    if(!el)return;
+    el.innerHTML='';
+    list.items.forEach((item,i)=>{
+      const key='td_'+list.pfx+i;
+      let isDone=false;try{isDone=localStorage.getItem(key)==='1';}catch(e){}
+      total++;if(isDone)done++;
+      const row=document.createElement('div');row.className='todo-item';
+      row.innerHTML='<div class="chk'+(isDone?' done':'')+'" id="chk_'+key+'" onclick="toggleTodo(\''+key+'\')"></div><div class="todo-label'+(isDone?' done':'')+'" id="txt_'+key+'">'+item+'</div>';
+      el.appendChild(row);
+    });
+  });
+  updateProg(done,total);
+}
+
+function toggleTodo(key){
+  const chk=document.getElementById('chk_'+key),txt=document.getElementById('txt_'+key);
+  let isDone=false;try{isDone=localStorage.getItem(key)==='1';}catch(e){}
+  isDone=!isDone;try{localStorage.setItem(key,isDone?'1':'');}catch(e){}
+  chk.classList.toggle('done',isDone);txt.classList.toggle('done',isDone);
+  let t=0,d=0;
+  ALL_TODOS.forEach(l=>l.items.forEach((_,i)=>{t++;try{if(localStorage.getItem('td_'+l.pfx+i)==='1')d++;}catch(e){}}));
+  updateProg(d,t);
+}
+
+function updateProg(d,t){
+  const pct=t>0?Math.round(d/t*100):0;
+  document.getElementById('s-done').innerHTML=d+'<span class="stat-unit"> / '+t+'</span>';
+  document.getElementById('s-pct').textContent=pct+'%';
+  document.getElementById('s-bar').style.width=pct+'%';
+  document.getElementById('sch-pct').textContent=pct+'%';
+  document.getElementById('sch-bar').style.width=pct+'%';
+}
+
+function calcMacros(w){
+  w=parseInt(w);
+  document.getElementById('wt-out').textContent=w+' lbs';
+  const pro=w,carb=Math.round(w*2),fat=Math.round(w*0.46),cal=Math.round(pro*4+carb*4+fat*9);
+  document.getElementById('m-cal').textContent=cal.toLocaleString();
+  document.getElementById('m-pro').textContent=pro;
+  document.getElementById('m-carb').textContent=carb;
+  document.getElementById('m-fat').textContent=fat;
+}
+
+const WORKOUTS=[
+  {name:'Day 1 — Push',note:'Chest, shoulders, triceps. Face pulls every push day — posture is non-negotiable.',exs:[['Parallette push-ups (or elevated)','4 x 12–15'],['Dips (bodyweight)','4 x 10–15'],['Pike push-ups','3 x 10–12'],['Diamond push-ups','3 x 12'],['Band face pulls','3 x 20'],['Band lateral raises','3 x 15'],['Overhead press — gym until June','3 x 8–10']]},
+  {name:'Day 2 — Pull',note:'Back, biceps. Pull-ups are king — track your max reps every session.',exs:[['Pull-ups (full ROM)','5 x max reps'],['Chin-ups','3 x max reps'],['Band pull-aparts','3 x 25'],['Band rows (door anchor)','4 x 15'],['Inverted rows','3 x 12'],['Band bicep curls','3 x 15'],['Cable rows — gym until June','3 x 10–12']]},
+  {name:'Day 3 — Legs + Glutes',note:'Posture priority day. Directly fixes your forward lean and foot turnout.',exs:[['Bulgarian split squats','4 x 10 / side'],['Single-leg glute bridge','3 x 15 / side'],['Band clamshells','3 x 20 / side'],['Nordic curl negatives','3 x 6 slow'],['Lateral band walks','3 x 15 steps / side'],['Box step-ups','3 x 12 / side'],['Single-leg calf raises','3 x 20 / side'],['Couch stretch','90 sec / side — end of session']]},
+  {name:'Day 4 — Core + Skill',note:'Parallette work, anti-rotation core, posture drills. Skill building for the long term.',exs:[['Dead bugs','3 x 10 / side slow'],['Hollow body hold','3 x 30–45 sec'],['Plank + shoulder taps','3 x 20 taps'],['Parallette L-sit','5 x max hold'],['Parallette dips','3 x 12'],['Wall angels','3 x 10'],['Chin tucks','3 x 15'],['Band pull-aparts','2 x 25']]},
+];
+
+function showWk(idx,btn){
+  document.querySelectorAll('#wk-tabs .day-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const w=WORKOUTS[idx],el=document.getElementById('wk-display');
+  el.innerHTML='<p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">'+w.note+'</p>';
+  w.exs.forEach(ex=>{const r=document.createElement('div');r.className='ex-row';r.innerHTML='<span class="ex-name">'+ex[0]+'</span><span class="ex-sets">'+ex[1]+'</span>';el.appendChild(r);});
+}
+
+const MEALS=[
+  {label:'Monday — training day (push)',meals:[{n:'Breakfast',c:'~620 cal',f:'Overnight oats + Greek yogurt + protein powder + banana + chia',p:45,cb:70,ft:12},{n:'Mid-morning snack',c:'~200 cal',f:'2 hard-boiled eggs + almonds',p:14,cb:2,ft:14},{n:'Lunch',c:'~680 cal',f:'Rice + chicken breast + broccoli + olive oil',p:52,cb:72,ft:10},{n:'Pre-workout',c:'~150 cal',f:'Banana + 5g creatine in water',p:2,cb:27,ft:0},{n:'Post-workout',c:'~350 cal',f:'2-scoop protein shake + berries',p:50,cb:30,ft:5},{n:'Dinner',c:'~650 cal',f:'Sweet potato + ground beef + sautéed spinach + garlic',p:45,cb:55,ft:18},{n:'Before bed',c:'~180 cal',f:'Cottage cheese + mixed nuts + magnesium glycinate',p:18,cb:8,ft:10}]},
+  {label:'Tuesday — training day (pull)',meals:[{n:'Breakfast',c:'~580 cal',f:'3 scrambled eggs + 2 Ezekiel toast + ½ avocado + coffee',p:28,cb:40,ft:22},{n:'Snack',c:'~200 cal',f:'Greek yogurt + blueberries',p:18,cb:20,ft:3},{n:'Lunch',c:'~680 cal',f:'Rice + chicken + broccoli',p:52,cb:72,ft:10},{n:'Pre-workout',c:'~150 cal',f:'Banana + creatine',p:2,cb:27,ft:0},{n:'Post-workout',c:'~350 cal',f:'Protein shake + berries',p:50,cb:30,ft:5},{n:'Dinner',c:'~620 cal',f:'Sweet potato + ground beef + sautéed bell peppers + onion',p:44,cb:52,ft:17},{n:'Before bed',c:'~180 cal',f:'Cottage cheese + almonds',p:18,cb:8,ft:10}]},
+  {label:'Wednesday — rest day (lighter)',meals:[{n:'Breakfast',c:'~550 cal',f:'Overnight oats + coffee',p:40,cb:65,ft:10},{n:'Snack',c:'~160 cal',f:'2 hard-boiled eggs',p:12,cb:1,ft:10},{n:'Lunch',c:'~620 cal',f:'Rice + chicken + broccoli (slightly smaller)',p:48,cb:65,ft:9},{n:'Snack',c:'~200 cal',f:'Apple + 2 tbsp peanut butter',p:4,cb:30,ft:8},{n:'Dinner',c:'~600 cal',f:'Sweet potato + beef + spinach',p:44,cb:50,ft:16},{n:'Before bed',c:'~180 cal',f:'Cottage cheese + nuts + magnesium',p:18,cb:8,ft:10}]},
+  {label:'Thursday — training day (legs)',meals:[{n:'Breakfast',c:'~640 cal',f:'4-egg omelette + spinach + ½ avocado + oats + coffee',p:35,cb:45,ft:26},{n:'Snack',c:'~200 cal',f:'Protein shake + banana',p:27,cb:30,ft:3},{n:'Lunch',c:'~680 cal',f:'Rice + chicken + broccoli',p:52,cb:72,ft:10},{n:'Pre-workout',c:'~150 cal',f:'Banana + creatine',p:2,cb:27,ft:0},{n:'Post-workout',c:'~380 cal',f:'2-scoop shake + milk + blueberries',p:52,cb:35,ft:6},{n:'Dinner',c:'~650 cal',f:'Sweet potato + ground beef + mixed vegetables',p:45,cb:55,ft:17},{n:'Before bed',c:'~180 cal',f:'Cottage cheese + nuts',p:18,cb:8,ft:10}]},
+  {label:'Friday — abstinence day (no meat)',meals:[{n:'Breakfast',c:'~560 cal',f:'Overnight oats + coffee',p:40,cb:65,ft:10},{n:'Snack',c:'~200 cal',f:'2 boiled eggs + almonds',p:14,cb:2,ft:14},{n:'Lunch',c:'~600 cal',f:'Rice + shrimp stir-fry + broccoli + soy sauce + garlic',p:48,cb:65,ft:9},{n:'Snack',c:'~200 cal',f:'Greek yogurt + berries',p:18,cb:20,ft:3},{n:'Dinner',c:'~620 cal',f:'Baked salmon + sweet potato + sautéed spinach',p:46,cb:48,ft:20},{n:'Before bed',c:'~180 cal',f:'Cottage cheese + mixed nuts + magnesium',p:18,cb:8,ft:10}]},
+  {label:'Saturday — training day (core + posterior)',meals:[{n:'Breakfast',c:'~650 cal',f:'3 eggs + 3 strips bacon + 2 toast + fruit + coffee',p:35,cb:48,ft:24},{n:'Snack',c:'~200 cal',f:'Protein shake + banana',p:27,cb:30,ft:3},{n:'Lunch',c:'~700 cal',f:'Big rice bowl + double chicken + avocado + hot sauce',p:55,cb:70,ft:18},{n:'Pre-workout',c:'~150 cal',f:'Banana + creatine',p:2,cb:27,ft:0},{n:'Post-workout',c:'~380 cal',f:'Protein shake + milk',p:52,cb:35,ft:6},{n:'Dinner',c:'~700 cal',f:'Something you enjoy — steak, pasta, burger. Saturday is earned.',p:48,cb:58,ft:22},{n:'Before bed',c:'~180 cal',f:'Cottage cheese + nuts',p:18,cb:8,ft:10}]},
+  {label:'Sunday — Mass, rest, and meal prep',meals:[{n:'Pre-Mass (light)',c:'~350 cal',f:'Protein shake or 2 eggs + toast. Light — you\'re going to Mass.',p:28,cb:25,ft:10},{n:'Post-Mass brunch',c:'~750 cal',f:'4 eggs + bacon + home fries + fruit + coffee. Sit down and enjoy it.',p:40,cb:55,ft:28},{n:'Afternoon snack',c:'~200 cal',f:'Nuts + fruit while cooking during meal prep',p:6,cb:20,ft:12},{n:'Sunday dinner',c:'~750 cal',f:'Roast chicken, pasta, or steak. Not a container. This is the reward.',p:48,cb:62,ft:24},{n:'Before bed',c:'~180 cal',f:'Cottage cheese + magnesium. Light — you ate well.',p:18,cb:8,ft:10}]},
+];
+
+function showMeals(idx,btn){
+  document.querySelectorAll('#meal-tabs .day-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const d=MEALS[idx],el=document.getElementById('meal-display');
+  el.innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:10px">'+d.label+'</p>';
+  d.meals.forEach(m=>{
+    const c=document.createElement('div');c.className='meal-card';
+    c.innerHTML='<div class="meal-header"><span class="meal-name">'+m.n+'</span><span class="meal-cal">'+m.c+'</span></div><div class="meal-food">'+m.f+'</div><div class="meal-macros"><span class="mac mac-p">'+m.p+'g protein</span><span class="mac mac-c">'+m.cb+'g carbs</span><span class="mac mac-f">'+m.ft+'g fat</span></div>';
+    el.appendChild(c);
+  });
+}
+
+const SUMMER=[
+  {d:'Apr 22–27',t:'Clear the decks',ph:'school',i:['All History HW/CW (5.5, 3.2, MLK letter, Federalist 10, AP Gov readings)','AP Calc PS 5.1 + Reflection + Lab','Establish gym routine + morning prayer habit']},
+  {d:'Apr 28–May 4',t:'Physics + E&M push',ph:'school',i:['All Physics C E&M (11G, 11I, 12B, 12D, 12F, 13B, 13D, 13E, VCD FRQs)','Physics C Mech: Pre Labs + Progress Checks','Religion assignments 1–4 + Virtual Day']},
+  {d:'May 5–11',t:'Finish all school work',ph:'school',i:['Any remaining virtual days across all classes','Begin SolidWorks tutorials (1 hr/evening once clear)','Gym habit fully locked in']},
+  {d:'May 12–18',t:'SolidWorks foundations',ph:'cert',i:['Parts, assemblies, drawings — 1.5 hrs/evening','Order ThinkPad P1 Gen 7 + parallettes','CSWA sample questions — start timed practice']},
+  {d:'May 19–25',t:'CSWA prep',ph:'cert',i:['SolidWorks drawings + configurations + full mock exams','CSWA timed practice daily','Progressive overload check-in']},
+  {d:'May 26–Jun 1',t:'CSWA exam week',ph:'cert',i:['Final mock exams','Take CSWA ($99 student pricing)','Begin Fusion 360 intro (free Autodesk student account)']},
+  {d:'Jun 2–8',t:'Gym ends — full home',ph:'cert',i:['Gym access ends — full bodyweight home setup','CSWP prep: advanced parts + surfacing','Dip belt if hitting 3x15 pull-ups']},
+  {d:'Jun 9–22',t:'CSWP deep work',ph:'cert',i:['CSWP sheet metal + weldments','Fusion 360 assemblies + rendering','Track strength vs week 1 baseline']},
+  {d:'Jun 23–29',t:'CSWP exam',ph:'cert',i:['Full CSWP timed mock exams x3','Take CSWP exam','Post-exam rest day — earned it']},
+  {d:'Jun 30–Jul 6',t:'Pre-vacation buffer',ph:'rest',i:['Light Fusion 360 review only (30 min/day)','Gym stays consistent','Mental reset before vacation']},
+  {d:'Jul 7–13',t:'Vacation week 1',ph:'vac',i:['Full rest — no certs, no study','Stay active: walks, swimming, movement','Morning prayer stays. Enjoy it.']},
+  {d:'Jul 14–20',t:'Vacation week 2',ph:'vac',i:['Genuine rest continues','1 Fusion 360 video if you want — not required','Return energized']},
+  {d:'Jul 21–27',t:'Fusion 360 cert',ph:'cert',i:['Fusion 360 cert exam prep','Take Fusion 360 Autodesk cert exam','Begin KiCad PCB design basics']},
+  {d:'Jul 28–Aug 3',t:'PCB + Revit',ph:'cert',i:['KiCad: schematic capture + PCB layout fundamentals','Autodesk Revit basics — free student license','Strength check vs week 1 numbers']},
+  {d:'Aug 4–10',t:'Revit cert',ph:'cert',i:['Revit fundamentals exam prep','Take Autodesk Revit certification','MIT OCW Physics + Calc for RPI prep begins']},
+  {d:'Aug 11–17',t:'RPI ready',ph:'school',i:['Organize all certifications + update resume','MIT OCW 18.01 + 8.01 review','Final strength vs week 1 assessment']},
+  {d:'Aug 18–19',t:'Done',ph:'rest',i:['Review everything accomplished this summer','Set intentions for RPI — dual degree plan','Rest, pray, be grateful']},
+];
+const PH={school:{badge:'b-purple',label:'School'},cert:{badge:'b-blue',label:'CAD cert'},rest:{badge:'b-green',label:'Recovery'},vac:{badge:'b-amber',label:'Vacation'}};
+
+function buildSummer(){
+  const el=document.getElementById('summer-container');
+  SUMMER.forEach(w=>{
+    const ph=PH[w.ph]||{badge:'b-blue',label:w.ph};
+    const c=document.createElement('div');c.className='week-card';
+    c.innerHTML='<div class="week-header"><span class="week-title">'+w.d+' — '+w.t+'</span><span class="badge '+ph.badge+'">'+ph.label+'</span></div><div class="week-items">'+w.i.map(i=>'• '+i).join('<br>')+'</div>';
+    el.appendChild(c);
+  });
+}
+
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const ids=['today','school','schedule','fitness','diet','phone','certs','summer','gear'];
+  const idx=ids.indexOf(id);
+  if(idx>=0)document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+}
+
+initHeader();
+buildTodos();
+showWk(0,document.querySelector('#wk-tabs .day-tab'));
+showMeals(0,document.querySelector('#meal-tabs .day-tab'));
+buildSummer();
+</script>
+</body>
+</html>
